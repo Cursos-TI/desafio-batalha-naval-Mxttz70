@@ -1,95 +1,191 @@
 #include <stdio.h>
-#include <stdbool.h>
+#include <stdlib.h>
+#include <time.h>
 
-#define TAMANHO_TABULEIRO 10
-#define TAMANHO_NAVIO 3
+#define SIZE 10
+#define WATER 0
+#define SHIP 3
+#define SKILL_SIZE 5
 
-// Função para inicializar o tabuleiro com água (0)
-void inicializar_tabuleiro(int tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO]) {
-    for (int i = 0; i < TAMANHO_TABULEIRO; i++) {
-        for (int j = 0; j < TAMANHO_TABULEIRO; j++) {
-            tabuleiro[i][j] = 0; // Inicializa todas as posições com 0 (água)
+void initializeBoard(int board[SIZE][SIZE]) {
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            board[i][j] = WATER;
         }
     }
 }
 
-// Função para verificar se o navio pode ser posicionado
-bool pode_posicionar_navio(int tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO], int linha, int coluna, int tamanho, bool horizontal) {
-    if (horizontal) {
-        if (coluna + tamanho > TAMANHO_TABULEIRO) return false; // Verifica se o navio sai do tabuleiro
-        for (int i = 0; i < tamanho; i++) {
-            if (tabuleiro[linha][coluna + i] != 0) return false; // Verifica se há sobreposição
+int canPlaceHorizontal(int board[SIZE][SIZE], int row, int col, int length) {
+    if (col + length > SIZE) return 0; // Verifica se cabe na linha
+    for (int j = col; j < col + length; j++) {
+        if (board[row][j] != WATER) return 0; // Verifica se já está ocupado
+    }
+    return 1;
+}
+
+int canPlaceVertical(int board[SIZE][SIZE], int row, int col, int length) {
+    if (row + length > SIZE) return 0; // Verifica se cabe na coluna
+    for (int i = row; i < row + length; i++) {
+        if (board[i][col] != WATER) return 0; // Verifica se já está ocupado
+    }
+    return 1;
+}
+
+int canPlaceDiagonal(int board[SIZE][SIZE], int startRow, int startCol, int length, int direction) {
+    for (int i = 0; i < length; i++) {
+        int row = startRow + (direction == 1 ? i : -i);
+        int col = startCol + i;
+        if (row < 0 || row >= SIZE || col < 0 || col >= SIZE || board[row][col] != WATER) {
+            return 0; // Verifica se está fora dos limites ou já ocupado
         }
-    } else {
-        if (linha + tamanho > TAMANHO_TABULEIRO) return false; // Verifica se o navio sai do tabuleiro
-        for (int i = 0; i < tamanho; i++) {
-            if (tabuleiro[linha + i][coluna] != 0) return false; // Verifica se há sobreposição
+    }
+    return 1;
+}
+
+void placeHorizontal(int board[SIZE][SIZE], int row, int col, int length) {
+    for (int j = col; j < col + length; j++) {
+        board[row][j] = SHIP;
+    }
+}
+
+void placeVertical(int board[SIZE][SIZE], int row, int col, int length) {
+    for (int i = row; i < row + length; i++) {
+        board[i][col] = SHIP;
+    }
+}
+
+void placeDiagonal(int board[SIZE][SIZE], int startRow, int startCol, int length, int direction) {
+    for (int i = 0; i < length; i++) {
+        int row = startRow + (direction == 1 ? i : -i);
+        int col = startCol + i;
+        board[row][col] = SHIP;
+    }
+}
+
+void printBoard(int board[SIZE][SIZE]) {
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            printf("%d ", board[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+void createCone(int cone[SKILL_SIZE][SKILL_SIZE]) {
+    for (int i = 0; i < SKILL_SIZE; i++) {
+        for (int j = 0; j < SKILL_SIZE; j++) {
+            if (j >= (SKILL_SIZE - 1) / 2 - i && j <= (SKILL_SIZE - 1) / 2 + i) {
+                cone[i][j] = 1; // Área afetada
+            } else {
+                cone[i][j] = 0; // Área não afetada
+            }
         }
     }
-    return true;
 }
 
-// Função para posicionar um navio horizontalmente
-void posicionar_navio_horizontal(int tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO], int linha, int coluna) {
-    for (int i = 0; i < TAMANHO_NAVIO; i++) {
-        tabuleiro[linha][coluna + i] = 3; // Posiciona o navio horizontalmente
-    }
-}
-
-// Função para posicionar um navio verticalmente
-void posicionar_navio_vertical(int tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO], int linha, int coluna) {
-    for (int i = 0; i < TAMANHO_NAVIO; i++) {
-        tabuleiro[linha + i][coluna] = 3; // Posiciona o navio verticalmente
-    }
-}
-
-// Função para posicionar um navio diagonalmente (cima direita ou baixo direita)
-void posicionar_navio_diagonal(int tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO], int linha, int coluna, bool descendo) {
-    for (int i = 0; i < TAMANHO_NAVIO; i++) {
-        tabuleiro[linha + (descendo ? i : -i)][coluna + i] = 3; // Posiciona o navio diagonalmente
-    }
-}
-
-// Função para exibir o tabuleiro
-void exibir_tabuleiro(int tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO]) {
-    for (int i = 0; i < TAMANHO_TABULEIRO; i++) {
-        for (int j = 0; j < TAMANHO_TABULEIRO; j++) {
-            printf("%d ", tabuleiro[i][j]); // Exibe cada posição do tabuleiro
+void createCross(int cross[SKILL_SIZE][SKILL_SIZE]) {
+    for (int i = 0; i < SKILL_SIZE; i++) {
+        for (int j = 0; j < SKILL_SIZE; j++) {
+            if (i == (SKILL_SIZE - 1) / 2 || j == (SKILL_SIZE - 1) / 2) {
+                cross[i][j] = 1; // Área afetada
+            } else {
+                cross[i][j] = 0; // Área não afetada
+            }
         }
-        printf("\n"); // Nova linha após cada linha do tabuleiro
+    }
+}
+
+void createOctahedron(int octahedron[SKILL_SIZE][SKILL_SIZE]) {
+    for (int i = 0; i < SKILL_SIZE; i++) {
+        for (int j = 0 ; j < SKILL_SIZE; j++) {
+            if (i + j >= (SKILL_SIZE - 1) / 2 && i + (SKILL_SIZE - 1 - j) >= (SKILL_SIZE - 1) / 2 &&
+                (SKILL_SIZE - 1 - i) + j >= (SKILL_SIZE - 1) / 2 && (SKILL_SIZE - 1 - i) + (SKILL_SIZE - 1 - j) >= (SKILL_SIZE - 1) / 2) {
+                octahedron[i][j] = 1; // Área afetada
+            } else {
+                octahedron[i][j] = 0; // Área não afetada
+            }
+        }
     }
 }
 
 int main() {
-    int tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO];
+    int board[SIZE][SIZE];
+    initializeBoard(board);
 
-    // Inicializa o tabuleiro
-    inicializar_tabuleiro(tabuleiro);
+    srand(time(NULL));
 
-    // Posiciona os navios
-    // Navio horizontal na linha 1, coluna 1
-    if (pode_posicionar_navio(tabuleiro, 1, 1, TAMANHO_NAVIO, true)) {
-        posicionar_navio_horizontal(tabuleiro, 1, 1);
+    // Posicionar 2 navios horizontalmente
+    for (int i = 0; i < 2; i++) {
+        int row = rand() % SIZE;
+        int col = rand() % SIZE;
+        int length = 1; // Tamanho do navio (1 posição)
+        if (canPlaceHorizontal(board, row, col, length)) {
+            placeHorizontal(board, row, col, length);
+        } else {
+            i--; // Tentar novamente
+        }
     }
 
-    // Navio vertical na linha 4, coluna 4
-    if (pode_posicionar_navio(tabuleiro, 4, 4, TAMANHO_NAVIO, false)) {
-        posicionar_navio_vertical(tabuleiro, 4, 4);
+    // Posicionar 2 navios verticalmente
+    for (int i = 0; i < 2; i++) {
+        int row = rand() % SIZE;
+        int col = rand() % SIZE;
+        int length = 1; // Tamanho do navio (1 posição)
+        if (canPlaceVertical(board, row, col, length)) {
+            placeVertical(board, row, col, length);
+        } else {
+            i--; // Tentar novamente
+        }
     }
 
-    // Navio diagonal descendo na linha 6, coluna 0
-    if (pode_posicionar_navio(tabuleiro, 6, 0, TAMANHO_NAVIO, true)) {
-        posicionar_navio_diagonal(tabuleiro, 6, 0, true);
+    // Posicionar 2 navios diagonalmente
+    for (int i = 0; i < 2; i++) {
+        int startRow = rand() % SIZE;
+        int startCol = rand() % SIZE;
+        int length = 1; // Tamanho do navio (1 posição)
+        int direction = (rand() % 2) ? 1 : -1; // Direção da diagonal (1 para baixo e -1 para cima)
+        if (canPlaceDiagonal(board, startRow, startCol, length, direction)) {
+            placeDiagonal(board, startRow, startCol, length, direction);
+        } else {
+            i--; // Tentar novamente
+        }
     }
 
-    // Navio diagonal subindo na linha 3, coluna 6
-    if(pode_posicionar_navio(tabuleiro, 3, 6, TAMANHO_NAVIO, false)) {
-        posicionar_navio_diagonal(tabuleiro, 3, 6, false);
+    printBoard(board);
+
+    // Criar matrizes de habilidade
+    int cone[SKILL_SIZE][SKILL_SIZE];
+    int cross[SKILL_SIZE][SKILL_SIZE];
+    int octahedron[SKILL_SIZE][SKILL_SIZE];
+
+    createCone(cone);
+    createCross(cross);
+    createOctahedron(octahedron);
+
+    // Imprimir matrizes de habilidade
+    printf("\nCone:\n");
+    for (int i = 0; i < SKILL_SIZE; i++) {
+        for (int j = 0; j < SKILL_SIZE; j++) {
+            printf("%d ", cone[i][j]);
+        }
+        printf("\n");
     }
 
-    //Exibir o tabuleiro
-    printf("Tabuleiro batalha naval:\n");
-    exibir_tabuleiro(tabuleiro);
+    printf("\nCruz:\n");
+    for (int i = 0; i < SKILL_SIZE; i++) {
+        for (int j = 0; j < SKILL_SIZE; j++) {
+            printf("%d ", cross[i][j]);
+        }
+        printf("\n");
+    }
+
+    printf("\nOctaedro:\n");
+    for (int i = 0; i < SKILL_SIZE; i++) {
+        for (int j = 0; j < SKILL_SIZE; j++) {
+            printf("%d ", octahedron[i][j]);
+        }
+        printf("\n");
+    }
 
     return 0;
 }
